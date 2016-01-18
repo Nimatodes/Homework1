@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #define BUFFERSIZE 10
+#define CYCLES 100
 void producer();
 void consumer();
 void produce(int *buffer, int i);
@@ -12,8 +13,10 @@ int main(int argc, char const *argv[]) {
 	for(int i=0; i<BUFFERSIZE; i++) {
 		buffer[i] = 0;	//set buffer slots as "empty"
 	}
-	producer(buffer, BUFFERSIZE, 0);
-	consumer(buffer, BUFFERSIZE, BUFFERSIZE);
+	for(int i=0; i<CYCLES; i++) {
+		producer(buffer, BUFFERSIZE, 0);
+		consumer(buffer, BUFFERSIZE, BUFFERSIZE);
+	}
 	free(buffer);
 	printf("DONE\n");
 	return 0;
@@ -23,13 +26,13 @@ void producer(int *buffer, int bufferSize) {
 	for(int i=0; i<bufferSize; i++) {
 		produce(buffer, i);	//insert item to buffer
 	}
-	printf("Producer finished\n");
+	printf("Producer finished cycle\n");
 }
 void consumer(int *buffer, int bufferSize) {
 	for(int i=0; i<bufferSize; i++) {
 		consume(buffer, i);	//consume item from buffer
 	}
-	printf("Consumer finished\n");
+	printf("Consumer finished cycle\n");
 }
 
 void produce(int *buffer, int i) {
