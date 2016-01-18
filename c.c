@@ -1,19 +1,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
-#include <semaphore.h>
 
 #define BUFFERSIZE 10
 #define CYCLES 100
-sem_t mutex;	//declare semaphore mutex
-sem_t empty;	//declare semaphore empty
-sem_t full;		//declare semaphore full
+pthread_mutex_t mutex;			//declare mutex mutex
+pthread_cond_t condProducer;	//declare condition condProducer
+pthread_cond_t condConsumer;	//declare condition condConsumer
 
 void *producer(void *b);
 void *consumer(void *b);
 void produce(int *buffer, int i);
 void consume(int *buffer, int i);
-
 
 int main(int argc, char const *argv[]){
 	pthread_t producerThread, consumerThread;
@@ -21,18 +19,18 @@ int main(int argc, char const *argv[]){
 	for(int i=0; i<BUFFERSIZE; i++) {
 		buffer[i] = 0;	//set buffer slots as "empty"
 	}
-	sem_init(&mutex, 0, 1);				//initialize mutex semaphore to 1
-	sem_init(&empty, 0, BUFFERSIZE);	//initialize empty semaphore to BUFFERSIZE
-	sem_init(&full, 0, 0);				//initialize full semaphore to 0
+	pthread_mutex_init(&mutex, NULL);		//initialize mutex
+	pthread_cond_init(&condProducer, NULL);	//initialize condProducer
+	pthread_cond_init(&condConsumer, NULL);	//initialize condConsumer
 
 	pthread_create(&producerThread, NULL, producer, buffer);
 	pthread_create(&consumerThread, NULL, consumer, buffer);
 	pthread_join(producerThread, NULL);
 	pthread_join(consumerThread, NULL);
 	
-	sem_destroy(&mutex);	//destroy mutex semaphore
-	sem_destroy(&empty);	//destroy empty semaphore
-	sem_destroy(&full);		//destroy full semaphore
+	pthread_cond_destroy(&condProducer);	//destroy condProducer
+	pthread_cond_destroy(&condConsumer);	//destroy condConsumer
+	pthread_mutex_destroy(&mutex);			//destroy mutex
 	free(buffer);
 	printf("DONE\n");
 	return 0;
@@ -44,11 +42,11 @@ void *producer(void *b) {
 	int i=0;
 	int cyclesCompleted = 0;
 	while(cyclesCompleted<CYCLES) {
-		sem_wait(&empty);	//down empty, decrement it
-		sem_wait(&mutex);	//down mutex, enter critical region
+		pthread_mutex_lock(&mutex);	//ensures exclusive access to buffer
+		while(buffer[i] == 1) pthread_cond_wait(&condProducer, &mutex);	//wait until consumer has emptied slot i, unlock mutex while waiting
 		produce(buffer, i);	//insert item to buffer
-		sem_post(&mutex);	//up mutex, exit critical region
-		sem_post(&full);	//up full, increment it
+		pthread_cond_signal(&condConsumer);	//wake up consumer if it was waiting
+		pthread_mutex_unlock(&mutex);	//release buffer access
 		i = (i+1)%BUFFERSIZE;
 		if(i==0)
 			cyclesCompleted++;
@@ -61,11 +59,11 @@ void *consumer(void *b) {
 	int i = 0;
 	int cyclesCompleted = 0;
 	while(cyclesCompleted<CYCLES) {
-		sem_wait(&full);	//down full, decrement it
-		sem_wait(&mutex);	//down mutex, enter critical region
+		pthread_mutex_lock(&mutex);	//ensures exclusive access to buffer
+		while(buffer[i] == 0) pthread_cond_wait(&condConsumer, &mutex);	//wait until producer has filled slot i, unlock mutex while waiting
 		consume(buffer, i); //consume item from buffer
-		sem_post(&mutex);	//up mutex, exit critical region
-		sem_post(&empty);	//up empty, increment it
+		pthread_cond_signal(&condProducer);	//wake up producer if it was waiting
+		pthread_mutex_unlock(&mutex);	//release buffer access
 		i = (i+1)%BUFFERSIZE;
 		if(i==0)
 			cyclesCompleted++;
