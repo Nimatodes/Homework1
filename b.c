@@ -1,3 +1,4 @@
+/*Compile using C11 standard*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -29,7 +30,7 @@ int main(int argc, char const *argv[]){
 	pthread_create(&consumerThread, NULL, consumer, buffer);
 	pthread_join(producerThread, NULL);
 	pthread_join(consumerThread, NULL);
-	
+
 	sem_destroy(&mutex);	//destroy mutex semaphore
 	sem_destroy(&empty);	//destroy empty semaphore
 	sem_destroy(&full);		//destroy full semaphore

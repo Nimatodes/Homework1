@@ -1,3 +1,4 @@
+/*Compile using C11 standard*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -27,7 +28,7 @@ int main(int argc, char const *argv[]){
 	pthread_create(&consumerThread, NULL, consumer, buffer);
 	pthread_join(producerThread, NULL);
 	pthread_join(consumerThread, NULL);
-	
+
 	pthread_cond_destroy(&condProducer);	//destroy condProducer
 	pthread_cond_destroy(&condConsumer);	//destroy condConsumer
 	pthread_mutex_destroy(&mutex);			//destroy mutex

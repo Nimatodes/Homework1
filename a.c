@@ -1,3 +1,4 @@
+/*Compile using C11 standard*/
 #include <stdio.h>
 #include <stdlib.h>
 
